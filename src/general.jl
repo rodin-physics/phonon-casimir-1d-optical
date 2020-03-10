@@ -7,6 +7,13 @@ const ν = 1e-3;         # Relative tolerance for integration
 const η = 1e-7;         # Small number used for i0
 const NumEvals = 1e7;   # Maximum number of evaluations in quadgk
 
+# Impurity type
+struct Impurity
+    pos::Int    # Position of the impurity unit cell
+    n::Int      # Index of the atom in the unit cell
+    λ::Float64  # Impurity mass in units of μ
+end
+
 ## Functions
 function Q2_sθ(m, M, s, θ)
     # s should be 1 for optical branch, 0 for acoustic branch
@@ -35,16 +42,48 @@ function coupling(m, M, s, θ)
 end
 
 # Impurity coupling
-function YGY(m, M, z, D, Aj, Ak)
+function YGY(Ms, z, D, nj, nk)
+    m = Ms[1]
+    M = Ms[2]
     f_int_acc(θ) =
         Q2_sθ(m, M, 0, θ) * exp(1im * D * θ) / (-z^2 + Q2_sθ(m, M, 0, θ)) *
-        (Aj' * coupling(m, M, 0, θ) * Ak)
+        (coupling(m, M, 0, θ)[nj, nk])
 
     f_int_opt(θ) =
         Q2_sθ(m, M, 1, θ) * exp(1im * D * θ) / (-z^2 + Q2_sθ(m, M, 1, θ)) *
-        (Aj' * coupling(m, M, 1, θ) * Ak)
+        (coupling(m, M, 1, θ)[nj, nk])
 
     f_int(θ) = f_int_opt(θ) + f_int_acc(θ)
     res = quadgk(f_int, 0, 2 * π)[1]
     return (-res) / (2 * π)
 end
+
+function Δ(Ms, z, Imps)
+    nImps = length(Imps)
+    α = map(x -> 1 / Ms[x.n] - 1 / x.λ, Imps) |> Diagonal
+    Imp_Mat = repeat(Imps, 1, nImps)    # Impurity position matrix
+    ImpT_Mat = permutedims(Imp_Mat)     # Transpose of impurity position matrix
+    YGY_ = map(
+        (x, y) -> YGY(m, M, z, abs.(x.pos - y.pos), x.n, y.n),
+        Imp_Mat,
+        ImpT_Mat,
+    )
+
+    return (Matrix{Int}(I, nImps, nImps) .+ Prop_Mat * α)
+end
+
+function FI_Integrand(Ms, z, Imps)
+    α = map(x -> 1 / Ms[x.n] - 1 / x.λ, Imps) |> Diagonal
+    Δ_ = Δ(Ms, z, Imps)
+
+
+    Δ0_Inv =
+        map(
+            x -> 1 ./ (1 .+ YGY(Ms, z, 0, x.n, x.n) .* (1 / Ms[x.n] - 1 / x.λ)),
+            Imps,
+        ) |> Diagonal
+
+    return det(Δ0_Inv * Δ_) |> Complex |> log |> real
+end
+
+# @time YGY(1, 2, 1.2 + 1im * η, 2, 1,2)
