@@ -41,7 +41,7 @@ end
 # Mode couling term
 function coupling(Ms, s, θ)
     e = e_sθ(Ms, s, θ)
-    return (Ms * e * e' * Ms) / (e' * Ms * e)
+    return (Diagonal(Ms) * e * e' * Diagonal(Ms)) / (e' * Diagonal(Ms) * e)
 end
 
 # Impurity coupling
@@ -85,4 +85,6 @@ function FI_Integrand(Ms, z, Imps)
     return det(Δ0_Inv * Δ_) |> Complex |> log |> real
 end
 
-# @time YGY(1, 2, 1.2 + 1im * η, 2, 1,2)
+@time YGY([1, 2], 1.2 + 1im * η, 2, 1,2)
+
+# Q2_sθ([1,2.], 1, 1.2)
