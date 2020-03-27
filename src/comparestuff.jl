@@ -65,11 +65,10 @@ function Δ(Ms, z, Imps)
     Imp_Mat = repeat(Imps, 1, nImps)    # Impurity position matrix
     ImpT_Mat = permutedims(Imp_Mat)     # Transpose of impurity position matrix
     YGY_ = map(
-        (x, y) -> YGY(m, M, z, abs.(x.pos - y.pos), x.n, y.n),
+        (x, y) -> YGY(Ms, z, abs.(x.pos - y.pos), x.n, y.n),
         Imp_Mat,
         ImpT_Mat,
     )
-
 
     return (Matrix{Int}(I, nImps, nImps) .+ Prop_Mat * α)
 end
@@ -89,3 +88,81 @@ end
 @time YGY([1, 2], 1.2 + 1im * η, 2, 1,2)
 YGY([1, 2], 1.2 + 1im * η, 2, 1,2)
 # Q2_sθ([1,2.], 1, 1.2)
+
+function H_0(N, Ω_0, Ms)
+    m = Ms[1]
+    M = Ms[2]
+    H_0 = zeros(Float64, 2N, 2N)
+    H_0[1, 1] = -2 / m
+    H_0[1, 2] = 1 / m
+    H_0[N, N] = -2 / M
+    H_0[N, N - 1] = 1 / M
+    for i in 2:(2N - 1)
+        if i % 2 == 1
+            H_0[i, i] = -2 / m
+            H_0[i, i - 1] = 1 / m
+            H_0[i, i + 1] = 1 / m
+        elseif i % 2 == 0
+            H_0[i, i] = -2 / M
+            H_0[i, i - 1] = 1 / M
+            H_0[i, i + 1] = 1 / M
+        end
+    end
+    H_0 = Ω_0 * H_0
+    return H_0
+end
+
+function twoImpurities(i, j, s1, s2, impM)
+    imps = Array{Any}(undef, 2)
+    imps[1] = Impurity(i, s1, impM)
+    imps[2] = Impurity(j, s2, impM)
+    return imps
+end
+
+function H_I(Ms, N, Imps)
+    nImps = length(Imps)
+    H_I = zeros(Float64, 2N, 2N)
+    # α = map(x -> 1 / Ms[x.n] - 1 / x.λ, Imps) #|> Diagonal
+    for imp in Imps
+        r = 2 * (imp.pos - 1) + imp.n
+        αr = 1 / Ms[imp.n] - 1 / imp.λ
+        if r == 1
+            H_I[r, r] = 2 * αr
+            H_I[r, r + 1] = - αr
+        elseif r == 2 * N
+            H_I[r, r] = 2 * αr
+            H_I[r, r - 1] = - αr
+        else
+            H_I[r, r] = 2 * αr
+            H_I[r, r + 1] = - αr
+            H_I[r, r - 1] = - αr
+        end
+    end
+    return H_I
+end
+
+function monoatZPEwImp(N, m, i, j)
+    H0 = H_0(Int(N / 2), 1, [m, m])
+    si = Int(i % 2)
+    sj = Int(j % 2)
+    truei = Int((i + si) / 2)
+    truej = Int((j + sj) / 2)
+    if si == 0
+        si = 2
+    end
+    if sj == 0
+        sj = 2
+    end
+    # println(truei)
+    # println(truej)
+    # println(si)
+    # println(sj)
+    HI = H_I([m, m], Int(N / 2),  twoImpurities(truei, truej, si, sj, 20))
+    exactZPEDispersion = map(x -> 0.5 * sqrt(-x), eigvals(H0 + HI))
+    ZPE = sum(exactZPEDispersion)
+    return ZPE
+end
+
+monoatZPEwImp(1000, 1, 499, 501)
+YGY([1, 1], 1.2 + 1im * η, 2, 1,2)
+FI_Integrand([1, 1], 1.2 + 1im * η, twoImpurities(250, 251, 1, 1, 20))
