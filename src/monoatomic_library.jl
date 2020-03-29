@@ -147,6 +147,7 @@ function Exact_Free_Energy(N, M1, M2, D, T)
     # the finite-T portion T * log(1 - exp(-Ω / T))
     filter!(x -> x > 1e-12, Ω)
     total_energy = T * sum(log.(1 .- exp.(-Ω ./ T))) + sum(Ω) / 2
+    print(Ω .* 2)
 
     return total_energy
 end

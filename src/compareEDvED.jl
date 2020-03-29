@@ -7,7 +7,7 @@ Ds_Exact = 2 : 3 : 50   # Distances used for the exact diagonalization
 N = 1000                # Chain length for the exact diagonalization
 # T in units of Ω0
 T = 1e-12;
-
+Ds = Ds_Exact
 # Impurity masses in units of m (chain masses)
 Ms = [1/3, 4/3, 4, 10, 1000]
 
@@ -60,7 +60,7 @@ for ii = 1 : (length(Ms) - 4)
     E0 = Exact_Free_Energy(N, M, M, 1, T) - E_halfway
     # F_I divided by F_I at D = 1
     r =  map(x -> Exact_Free_Energy(N, M, M, x, T) - E_halfway, Ds_Exact) ./ E0;
-    Plot.display(plot!(log.(Ds_Exact), log.(r),
+    display(plot!(log.(Ds_Exact), log.(r),
         color = colors[ii],
         lab = "",
         markershape = :circle
