@@ -16,9 +16,12 @@ function dispersion_plot(Ms, N)
     # the squares of the energies
     Ω2 = eigvals(inv(M_Mat) * U_Mat)
     Ω = sqrt.(abs.(Ω2)) # in units √(k / μ)
-    plotly()
-    plot(res[1:N])
-    plot!(reverse(res[N+1:2*N]))
+    # plotly plots in browser
+    # plotly()
+    # plot(res[1:N])
+    # plot!(reverse(res[N+1:2*N]))
+    plot(Ω[1:N])
+    plot!(reverse(Ω[N+1:2*N]))
 end
 
 function exact_F(Ms, N, Imps, T)
@@ -43,11 +46,13 @@ function exact_F(Ms, N, Imps, T)
     Ω = sqrt.(abs.(Ω2)) # in units √(k / μ)
     # The free energy for each mode consists of the vacuum portion Ω / 2 and
     # the finite-T portion T * log(1 - exp(-Ω / T))
+    filter!(x -> x > 1e-12, Ω)
+
     total_energy = T * sum(log.(1 .- exp.(-Ω ./ T))) + sum(Ω) / 2
     return total_energy
 end
 
-nPts = 400 # Number of unit cells
-Ms = [1, 1]
-
-dispersion_plot(Ms, nPts)
+# nPts = 400 # Number of unit cells
+# Ms = [1, 1]
+#
+# dispersion_plot(Ms, nPts)
