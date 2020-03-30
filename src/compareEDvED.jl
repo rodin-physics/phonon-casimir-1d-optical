@@ -3,6 +3,7 @@ include("exactDiag1D.jl")
 
 # Comparing for the 0 temperature case
 
+Ds = 2:50
 Ds_Exact = 2 : 3 : 50   # Distances used for the exact diagonalization
 N = 1000                # Chain length for the exact diagonalization
 # T in units of Ω0
@@ -51,7 +52,7 @@ plot!(
     )
 
 ## Reference plot using monoatomic_library
-for ii = 1 : (length(Ms) - 4)
+for ii = 1 : (length(Ms) - 0)
     println(ii)
     M = Ms[ii];
     # Energy for maximally separated impurities in a finite-length chain
@@ -60,7 +61,7 @@ for ii = 1 : (length(Ms) - 4)
     E0 = Exact_Free_Energy(N, M, M, 1, T) - E_halfway
     # F_I divided by F_I at D = 1
     r =  map(x -> Exact_Free_Energy(N, M, M, x, T) - E_halfway, Ds_Exact) ./ E0;
-    Plot.display(plot!(log.(Ds_Exact), log.(r),
+    Plots.display(plot!(log.(Ds_Exact), real(log.(complex(r))),
         color = colors[ii],
         lab = "",
         markershape = :circle
@@ -68,22 +69,21 @@ for ii = 1 : (length(Ms) - 4)
 end
 
 function two_diImps(D, impM)
-    Imps = [diImpurity(1, 1, impM), diImpurity(1 + floor(Int, D/2), 1 + Int(D % 2))]
+    Imps = [diImpurity(1, 1, impM), diImpurity(1 + floor(Int, D/2), 1 + Int(D % 2), impM)]
     return Imps
 end
 
-for ii = 1: (length(Ms) - 4)
-    diM = [1, 1];
-    M = Ms[ii]
-    Imps = two_diImps(D, Ms[ii])
-    F_halfway = exact_F(diM, floor(Int, N / 2), two_diImps(floor(Int, N/2), M, T)
+for ii = 1: (length(Ms) - 0)
+    diM = [1., 1.];
+    M = Ms[ii];
+    F_halfway = exact_F(diM, floor(Int, N / 2), two_diImps(floor(Int, N/2), M), T)
     F0 = exact_F(diM, floor(Int, N / 2), two_diImps(1, M), T) - F_halfway
     r =  map(x -> exact_F(diM, floor(Int, N / 2), two_diImps(x, M), T) - F_halfway, Ds_Exact) ./ F0;
 
-    Plot.display(plot!(log.(Ds_Exact), log.(r),
+    Plots.display(plot!(log.(Ds_Exact), real(log.(complex(r))),
         color = colors[ii],
         lab = "",
-        markershape = :triangle
+        markershape = :cross
         ))
 
 end
