@@ -1,7 +1,7 @@
+using LaTeXStrings
+using LinearAlgebra
 using Plots
 using QuadGK
-using LinearAlgebra
-using LaTeXStrings
 
 ## Parameters
 const ν = 1e-3;         # Relative tolerance for integration
@@ -15,8 +15,20 @@ struct Impurity
     λ::Float64  # Impurity mass in units of μ
 end
 
-## Exact Diagonalization 1D
-function exact_F(Ms, N, Imps, T)
+# System type
+struct System
+    Ms::Vector{Float64}     # Masses in the 1D chain
+    Imps::Vector{Impurity}  # Impurities in the system
+    T::Float64              # Temperature of the system
+    N::Int                  # Number of unit cells in the system (used for ED)
+end
+
+## Exact Diagonalization 1D to obtain the total Free Energy
+function exact_F(system)
+    Ms = system.Ms
+    Imps = system.Imps
+    T = system.T
+    N = system.N
     # Number of atoms in the unit cell
     nAtom = length(Ms)
     # Prepare a pristine chain potential energy matrix
@@ -27,26 +39,60 @@ function exact_F(Ms, N, Imps, T)
     U_Mat[1, nAtom*N] = -1
     U_Mat[nAtom*N, 1] = -1
     # Prepare the matrix of masses
-    M_Mat = repeat(Ms, N)
+    M_List = repeat(Ms, N)
     # Replace the pristine masses by the impurities
     for ii in Imps
         coord = nAtom * (ii.pos - 1) + ii.n
-        M_Mat[coord] = ii.λ
+        M_List[coord] = ii.λ
     end
-    M_Mat = Diagonal(M_Mat)
+
+    M_Mat = Diagonal(M_List)
     # Calculate the eigenvalues of the system which give
     # the squares of the energies
-    Ω2 = eigvals(inv(M_Mat) * U_Mat)
+    Ω2 = eigvals(Symmetric(inv(M_Mat) * U_Mat))
     Ω = sqrt.(abs.(Ω2[2:N*nAtom]))  # in units √(k / μ). We are dropping
-    # the first mode because it has zero energy
+    # the first mode because it has zero energy and can cause numerical issues
 
     # The free energy for each mode consists of the vacuum portion Ω / 2 and
     # the finite-T portion T * log(1 - exp(-Ω / T))
     total_energy = T * sum(log.(1 .- exp.(-Ω ./ T))) + sum(Ω) / 2
     return total_energy
 end
-
 ## Functions
+function modes(Ms, θ)
+    M_Mat = Diagonal(1 ./ sqrt.(Ms))
+    L_Mat = [
+        2 (-1 - exp(-1im * θ))
+        (-1 - exp(1im * θ)) 2
+    ]
+    eig = eigen(Hermitian(M_Mat * L_Mat * M_Mat))
+    return eig
+end
+
+function Ξ_integrand(z, Ms, θ, idx_j, idx_l)
+    eig = modes(Ms, θ)
+    freq = eig.values ./ (-z^2 .+ eig.values)
+    coupling = eig.vectors[idx_j, :] .* conj.(eig.vectors[idx_l, :])
+    return sum(coupling .* freq)
+end
+
+function Ξ(z, system, j, l)
+    Imp_j = system.Imps[j]
+    Imp_l = system.Imps[l]
+
+    mj = system.Ms[Imp_j.n]
+    ml = system.Ms[Imp_l.n]
+    D = Imp_j.pos - Imp_l.pos |> abs
+
+    f_int(θ) =
+        -√(mj * ml) *
+        Ξ_integrand(z, system.Ms, θ, Imp_j.n, Imp_l.n) *
+        exp(1im * θ * D)
+
+    res = quadgk(f_int, 0, 2 * π)[1]
+    return (res / (2 * π))
+end
+## TODO
 function Q2_sθ(Ms, s, θ)
     m = Ms[1]
     M = Ms[2]
@@ -129,15 +175,10 @@ end
 
 
 # Colors for plotting
-my_red = RGB(215/255,67/255,84/255)
-my_green = RGB(106/255,178/255,71/255)
-my_blue = RGB(100/255,101/255,218/255)
-my_violet = RGB(169/255,89/255,201/255)
-my_orange = RGB(209/255,135/255,46/255)
+my_red = RGB(215 / 255, 67 / 255, 84 / 255)
+my_green = RGB(106 / 255, 178 / 255, 71 / 255)
+my_blue = RGB(100 / 255, 101 / 255, 218 / 255)
+my_violet = RGB(169 / 255, 89 / 255, 201 / 255)
+my_orange = RGB(209 / 255, 135 / 255, 46 / 255)
 
-colors = [my_red
-        , my_green
-        , my_blue
-        , my_violet
-        , my_orange
-         ]
+colors = [my_red, my_green, my_blue, my_violet, my_orange]
