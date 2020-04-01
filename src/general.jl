@@ -31,6 +31,9 @@ function exact_F(system)
     N = system.N
     # Number of atoms in the unit cell
     nAtom = length(Ms)
+    if sum(map(x -> x.n, Imps) .<= nAtom) != length(Imps)
+        error("Impurity index in the cell must not exceed the number of atoms")
+    end
     # Prepare a pristine chain potential energy matrix
     dv = 2 .* ones(nAtom * N)
     ev = -ones(nAtom * N - 1)
@@ -49,7 +52,7 @@ function exact_F(system)
     M_Mat = Diagonal(M_List)
     # Calculate the eigenvalues of the system which give
     # the squares of the energies
-    Ω2 = eigvals(Symmetric(inv(M_Mat) * U_Mat))
+    Ω2 = eigvals(inv(M_Mat) * U_Mat) |> real
     Ω = sqrt.(abs.(Ω2[2:N*nAtom]))  # in units √(k / μ). We are dropping
     # the first mode because it has zero energy and can cause numerical issues
 
@@ -69,14 +72,14 @@ function modes(Ms, θ)
     return eig
 end
 
-function Ξ_integrand(z, Ms, θ, idx_j, idx_l)
+function Ξ_jl_integrand(z, Ms, θ, idx_j, idx_l)
     eig = modes(Ms, θ)
     freq = eig.values ./ (-z^2 .+ eig.values)
     coupling = eig.vectors[idx_j, :] .* conj.(eig.vectors[idx_l, :])
     return sum(coupling .* freq)
 end
 
-function Ξ(z, system, j, l)
+function Ξ_jl(z, system, j, l)
     Imp_j = system.Imps[j]
     Imp_l = system.Imps[l]
 
@@ -86,12 +89,43 @@ function Ξ(z, system, j, l)
 
     f_int(θ) =
         -√(mj * ml) *
-        Ξ_integrand(z, system.Ms, θ, Imp_j.n, Imp_l.n) *
+        Ξ_jl_integrand(z, system.Ms, θ, Imp_j.n, Imp_l.n) *
         exp(1im * θ * D)
 
     res = quadgk(f_int, 0, 2 * π)[1]
     return (res / (2 * π))
 end
+
+function Ξ(z, system)
+    nImps = length(system.Imps)
+    js = repeat(1:nImps, 1, nImps)
+    ls = transpose(js)
+    res = map((j, l) -> Ξ_jl(z, system, j, l), js, ls)
+    return res
+end
+
+# Interaction energy (for now computed at T = 0)
+# FI Integrand for zero-T energy
+function F_I_Integrand_T0(system, z)
+    nImps = length(system.Imps)
+    Ξ_ = Ξ(z, system)
+    λs = map(x -> x.λ, system.Imps)
+    ms = map(x -> system.Ms[x.n], system.Imps)
+    α = Diagonal(1 ./ ms .- 1 ./ λs)
+    Δ = (Matrix{Int}(I, nImps, nImps) .+ Ξ_ * α)
+    Ξ0 = map(j -> Ξ_jl(z, system, j, j), 1:nImps) |> Diagonal
+    Δ0_Inv = (Matrix{Int}(I, nImps, nImps) .+ Ξ0 * α) |> inv
+
+    return (det(Δ0_Inv * Δ) |> Complex |> log |> real)
+end
+
+# FI for zero T
+function F_I_T0(system)
+    f(w) = F_I_Integrand_T0(system, 1im * w)
+    res = quadgk(f, -Inf, 0, Inf, maxevals = NumEvals)[1]
+    return (res / (2 * π))
+end
+
 ## TODO
 function Q2_sθ(Ms, s, θ)
     m = Ms[1]
