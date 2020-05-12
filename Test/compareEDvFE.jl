@@ -1,5 +1,6 @@
-include("monoatomic_library.jl")
-include("exactDiag1D.jl")
+# include("monoatomic_library.jl")
+include("../src/exactDiag1D.jl")
+include("../src/general.jl")
 
 # Comparing for the 0 temperature case
 
@@ -15,13 +16,6 @@ Ms = [1/3, 4/3, 4, 10, 1000]
 # Bounding power laws
 r_1 = 1 ./ Ds
 r_3 = 1 ./ (Ds.^3)
-
-# special case definition so the two kinds of impurities don't clash
-struct diImpurity
-    pos::Int    # Position of the impurity unit cell
-    n::Int      # Index of the atom in the unit cell
-    λ::Float64  # Impurity mass in units of μ
-end
 
 ## Plotting
 pyplot()
@@ -51,30 +45,14 @@ plot!(
     lab = ""
     )
 
-## Reference plot using monoatomic_library
-for ii = 1 : (length(Ms) - 0)
-    println(ii)
-    M = Ms[ii];
-    # Energy for maximally separated impurities in a finite-length chain
-    E_halfway = Exact_Free_Energy(N, M, M, floor(Int, N / 2), T)
-    # F_I for adjacent impurities
-    E0 = Exact_Free_Energy(N, M, M, 1, T) - E_halfway
-    # F_I divided by F_I at D = 1
-    r =  map(x -> Exact_Free_Energy(N, M, M, x, T) - E_halfway, Ds_Exact) ./ E0;
-
-    display(plot!(log.(Ds_Exact), log.(r),
-        e09b5b2204f2d5d0b49ea21db611faf4bcba6e6b
-        color = colors[ii],
-        lab = "",
-        markershape = :circle
-        ))
-end
+## Reference plot using exact_F
 
 function two_diImps(D, impM)
-    Imps = [diImpurity(1, 1, impM), diImpurity(1 + floor(Int, D/2), 1 + Int(D % 2), impM)]
+    Imps = [Impurity(1, 1, impM), Impurity(1 + floor(Int, D/2), 1 + Int(D % 2), impM)]
     return Imps
 end
 
+@time begin
 for ii = 1: (length(Ms) - 0)
     diM = [1., 1.];
     M = Ms[ii];
@@ -87,7 +65,23 @@ for ii = 1: (length(Ms) - 0)
         lab = "",
         markershape = :cross
         ))
-
+end
 end
 
-## Test plot using exactDiag1D
+# Test plot using exactDiag1D
+@time begin
+for ii = 1: (length(Ms) - 0)
+    diM = [1., 1.];
+    M = Ms[ii];
+    # F_halfway = F_I_T0(System(diM, two_diImps(floor(Int, N/2), M), T, N))
+    F_halfway = 0
+    F0 = F_I_T0(System(diM, two_diImps(1, M), T, N)) - F_halfway
+    r =  map(x -> F_I_T0(System(diM, two_diImps(x, M), T, N)) - F_halfway, Ds_Exact) ./ F0;
+
+    Plots.display(plot!(log.(Ds_Exact), real(log.(complex(r))),
+        color = colors[ii],
+        lab = "",
+        markershape = :cross
+        ))
+end
+end

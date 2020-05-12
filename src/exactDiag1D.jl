@@ -37,6 +37,7 @@ function exact_F(Ms, N, Imps, T)
     # Replace the pristine masses by the impurities
     for ii in Imps
         coord = length(Ms) * (ii.pos - 1) + ii.n
+        # println(M_Mat)
         M_Mat[coord] = ii.λ
     end
     M_Mat = Diagonal(M_Mat)
