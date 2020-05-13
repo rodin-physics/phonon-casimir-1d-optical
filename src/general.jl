@@ -49,18 +49,26 @@ function exact_F(system)
         coord = nAtom * (ii.pos - 1) + ii.n
         M_List[coord] = ii.λ
     end
-
     M_Mat = Diagonal(M_List)
     # Calculate the eigenvalues of the system which give
     # the squares of the energies
     Ω2 = eigvals(inv(M_Mat) * U_Mat) |> real
     Ω = sqrt.(abs.(Ω2[2:N*nAtom]))  # in units √(k / μ). We are dropping
     # the first mode because it has zero energy and can cause numerical issues
-
     # The free energy for each mode consists of the vacuum portion Ω / 2 and
     # the finite-T portion T * log(1 - exp(-Ω / T))
     total_energy = T * sum(log.(1 .- exp.(-Ω ./ T))) + sum(Ω) / 2
     return total_energy
+end
+
+function exact_FI(system)
+    F_tot = exact_F(system)
+    F_0 = exact_F(System(system.Ms, [], system.T, system.N))
+    F_1s = map(
+        x -> exact_F(System(system.Ms, [x], system.T, system.N)),
+        system.Imps,
+    )
+    return (F_tot - F_0 - sum(F_1s .- F_0))
 end
 ## Functions
 function modes(Ms, θ)

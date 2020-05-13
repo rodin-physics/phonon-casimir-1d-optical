@@ -5,11 +5,10 @@ M = 3.0
 N = 500
 
 T = 1e-12
-s = System([μ, μ], [Impurity(1, 1, M), Impurity(3, 2, M)], T, N)
-sFar = System([μ, μ], [Impurity(1, 1, M), Impurity(250, 1, M)], T, N)
+s = System([μ, 2 * μ], [Impurity(1, 1, M), Impurity(3, 2, M)], T, N)
 
 # About 3e-5 seconds
-@time modes(s.Ms, 1/1.2)
+@time modes(s.Ms, 1 / 1.2)
 
 # Same as above
 z = 1.2 + 1im * η
@@ -28,4 +27,4 @@ z = 1.2 + 1im * η
 @time F_I_T0(s)
 
 # Depends on the size of the system. Order of seconds
-@time exact_F(s) - exact_F(sFar)
+@time exact_FI(s)
