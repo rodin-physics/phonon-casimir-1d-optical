@@ -80,10 +80,7 @@ for jj = 1:length(diMs)
             println(ii)
             diM = [diMs[jj], diMs[kk]];
             M = Ms[ii];
-            # F_halfway = F_I_T0(System(diM, two_diImps(floor(Int, N/2), M), T, N))
-            F_halfway = exact_F(diM, floor(Int, N / 2), two_diImps(floor(Int, N/2), M), T)
-            F0 = exact_F(diM, floor(Int, N / 2), two_diImps(1, M), T) - F_halfway
-            r =  map(x -> exact_F(diM, floor(Int, N / 2), two_diImps(x, M), T) - F_halfway, Ds_Exact) ./ F0;
+            r =  map(x -> exact_F(System(diM, two_diImps(x, M), T, N)), Ds_Exact);
             jjkkii[jj, kk, ii] = r
             # Plots.display(plot!(log.(Ds_Exact), real(log.(complex(r))),
             #     color = colors[ii],
@@ -176,12 +173,16 @@ for jj = 1:(length(diMs) - 0)
                 markershape = :cross
                 ))
         end
-        savefig("plotED" * string(jj) * "_" * string(kk) * "Ms.png")
+        savefig("plotEDv2" * "_" * string(jj) * "_" * string(kk) * "Ms.png")
     end
 end
 println("done!")
 
-
+plotData = jjkkii[1, 1, :]
+for ii in 1:5
+    plot(log.(Ds_Exact), real(log.(complex(plotData[ii]))))
+end
+plot(log.(Ds_Exact), real(log.(complex(plotData[5]))))
 savefig("plot3_3_Ms.png")
 
 testArr = real(log.(complex(jjkkii[1, 4, 3])))

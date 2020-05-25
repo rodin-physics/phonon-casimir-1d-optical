@@ -54,7 +54,8 @@ end
 
 @time begin
 for ii = 1: (length(Ms) - 0)
-    diM = [1., 1.];
+    println(ii)
+    diM = [1., 3.];
     M = Ms[ii];
     F_halfway = exact_F(diM, floor(Int, N / 2), two_diImps(floor(Int, N/2), M), T)
     F0 = exact_F(diM, floor(Int, N / 2), two_diImps(1, M), T) - F_halfway
@@ -69,14 +70,15 @@ end
 end
 
 # Test plot using exactDiag1D
+# 1348 seconds omg
 @time begin
 for ii = 1: (length(Ms) - 0)
-    diM = [1., 1.];
+    diM = [1., 3.];
     M = Ms[ii];
     # F_halfway = F_I_T0(System(diM, two_diImps(floor(Int, N/2), M), T, N))
     F_halfway = 0
-    F0 = F_I_T0(System(diM, two_diImps(1, M), T, N)) - F_halfway
-    r =  map(x -> F_I_T0(System(diM, two_diImps(x, M), T, N)) - F_halfway, Ds_Exact) ./ F0;
+    # F0 = exact_FI(System(diM, two_diImps(1, M), T, N)) - F_halfway
+    r =  map(x -> exact_FI(System(diM, two_diImps(x, M), T, N)), Ds_Exact);
 
     Plots.display(plot!(log.(Ds_Exact), real(log.(complex(r))),
         color = colors[ii],
@@ -84,4 +86,24 @@ for ii = 1: (length(Ms) - 0)
         markershape = :cross
         ))
 end
+end
+
+
+@time begin
+for ii = 1:(length(Ms) - 0)
+    println(ii)
+    diM = [1., 3.];
+    M = Ms[ii];
+    # F_halfway = F_I_T0(System(diM, two_diImps(floor(Int, N/2), M), T, N))
+    F_halfway = 0
+    F0 = F_I_T0(System(diM, two_diImps(1, M), T, N)) - F_halfway
+    r =  map(x -> F_I_T0(System(diM, two_diImps(x, M), T, N)) - F_halfway, Ds_Exact) ./ F0;
+    # jjkkii[jj, kk, ii] = r
+    Plots.display(plot!(log.(Ds_Exact), real(log.(complex(r))),
+        color = colors[ii],
+        lab = "",
+        markershape = :cross
+        ))
+end
+println("done!")
 end
