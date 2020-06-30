@@ -7,6 +7,7 @@ using LinearAlgebra
 const ν = 1e-3;         # Relative tolerance for integration
 const η = 1e-7;         # Small number used for i0
 const NumEvals = 1e7;   # Maximum number of evaluations in quadgk
+T = 1e-8
 
 struct Mixed_System_Single_Ptb
     N::Int
@@ -130,12 +131,80 @@ function F_int_T0(system)
     return (res / (2 * π) / 2) # See the F_I formula for the division by 2
 end
 
+
+# Free Energy from Exact Diagonalization for two impurities
+function Exact_Free_Energy(system)
+    # easy refernce to system variables
+    N = system.N
+    m = system.m
+    Ω_0 = system.Ω_0
+    γ = system.γ
+    λ = system.λ
+    t = system.t
+    T = system.T
+
+    # Prepare a pristine chain potential energy matrix
+    dv = 2 .* ones(N)
+    ev = -ones(N - 1)
+
+    U_Mat = SymTridiagonal(dv, ev) + zeros(N, N)
+    # Make the system periodic by coupling the first and the last mass
+    U_Mat[1,  N] = -1
+    U_Mat[N,  1] = -1
+
+    # add the harmonic perturbation
+    U_Mat[t, t] = γ
+
+    # Prepare the matrix of masses
+    M_Mat = Diagonal(ones(N))
+    # Replace ending pristine masses by impurities
+    M_Mat[N, N] = 1 / λ
+
+    # Calculate the eigenvalues of the system which give
+    # the squares of the energies
+    Ω2 = real(eigvals(inv(M_Mat) * U_Mat))
+    # These Ω's are given in units of sqrt(K / m). We, however, want to give
+    # the energies in the units of 2*sqrt(K / m). Hence, we divide the
+    # energies by 2:
+    Ω = real(sqrt.(complex(Ω2[2 : N])) / 2)
+    # Ω = sqrt.(Ω2[2 : N]) / 2
+
+    # The free energy for each mode consists of the vacuum portion Ω / 2 and
+    # the finite-T portion T * log(1 - exp(-Ω / T))
+    filter!(x -> x > 1e-12, Ω)
+    total_energy = T * sum(log.(1 .- exp.(-Ω ./ T))) + sum(Ω) / 2
+
+    return total_energy
+end
+
+function Exact_Int_Energy(system)
+
+    # easy refernce to system variables
+    N = system.N
+    m = system.m
+    Ω_0 = system.Ω_0
+    γ = system.γ
+    λ = system.λ
+    t = system.t
+    T = system.T
+
+    F_I = Exact_Free_Energy(system)
+
+    F_m = real(Exact_Free_Energy(Mixed_System_Single_Ptb(N, m, Ω_0, γ, 0, t, T)))
+    F_h = real(Exact_Free_Energy(Mixed_System_Single_Ptb(N, m, Ω_0, 0, λ, t, T)))
+    F_0 = real(Exact_Free_Energy(Mixed_System_Single_Ptb(N, m, Ω_0, 0, 0, t, T)))
+
+    return (F_I - F_0) - (F_m - F_0) - (F_h - F_0)
+
+end
+
+
 N = 500
 m = 1.
 Ω_0 = 4.
 γ = 0.3
 λ = 0.3
-T = 1e-10
+T = 1e-8
 t = 16
 
 pyplot()
@@ -147,16 +216,34 @@ z = 1.5 * 1im
 # 1e-3s
 @time F_I_T0(test_sys)
 
+@time Exact_Free_Energy(test_sys)
+@time Exact_Int_Energy(test_sys)
+
+@time range_of_F = map(t -> real(Exact_Free_Energy(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T))), 1:3:50)
+@time range_of_F = map(t -> real(Exact_Int_Energy(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T))), 1:3:20)
+plot(1:3:50, range_of_F)
+plot(1:3:20, range_of_F)
+
+
 # 1e-4s
 @time F_int_Integrand_T0(z, test_sys)
 # 6e-4s
 @time F_int_T0(test_sys)
 # 0.09s
-@time range_of_F = map(t -> real(F_int_T0(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T))), 2:50)
+@time range_of_F = map(t -> real(F_int_T0(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T))), 1:3:20)
 # evidently some spikes
-plot(2:50, range_of_F)
+plot!(1:3:20, range_of_F)
+
+real(F_int_T0(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T)))
+
+@time range_of_F = map(γ -> real(F_int_T0(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T))), [0.1, 1., 5., 10., 20., 30., 50., 75., 100.])
+plot([0.1, 1., 5., 10., 20., 30., 50., 75., 100.], range_of_F)
+
+@time range_of_F = map(λ -> real(F_int_T0(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T))), [0.1, 1., 5., 10., 20., 30., 50., 75., 100.])
+plot([0.1, 1., 5., 10., 20., 30., 50., 75., 100.], range_of_F)
 
 
+x = 4
 
 # 0.09s
 @time range_of_F = map(t -> real(F_int_T0(Mixed_System_Single_Ptb(N, m, Ω_0, γ, λ, t, T))), 50:74)
