@@ -144,33 +144,6 @@ function F_I_Integrand_T0(ω, system)
     return (det(unit_mat .+ Ξ * Δ_Λ) |> Complex |> log |> real)
 end
 
-function F_I_Integrand(ω, system)
-    T = system.T
-    Ms = system.Ms
-    imps = system.Imps
-    imp_host_idx = map(x -> x.n, imps)
-    m = map(x -> Ms[x], imp_host_idx) |> Diagonal
-    m_sqrt = sqrt(m)
-    m_sqrt_inv = inv(m_sqrt)
-
-    nImps = length(imps)
-    imps_mat = repeat(imps, 1, nImps)
-    imps_mat_T = permutedims(imps_mat)
-
-    Π = map((x, y) -> Π_jl(ω, Ms, x, y), imps_mat, imps_mat_T)
-
-    Ξ = [
-        m_sqrt_inv*Π*m_sqrt_inv ω*m_sqrt_inv*Π*m_sqrt
-        ω*m_sqrt*Π*m_sqrt_inv (ω^2)*m_sqrt*Π*m_sqrt+m
-    ]
-
-    unit_mat = ones(2 * length(imps)) |> Diagonal
-    Δ_Λ =
-        vcat(map(x -> x.Δ, imps), map(x -> 1 / x.M - 1 / system.Ms[x.n], imps)) |> Diagonal
-    return imag(log(det(unit_mat + Ξ * Δ_Λ))) / (exp(ω / T) - 1)
-end
-
-
 function F_I_Integrand_Discrete(ω, system)
     T = system.T
     Ms = system.Ms
@@ -219,20 +192,6 @@ function F_I_T_Discrete(system)
         ) |> sum
     return (res) # See the F_I formula for the division by 2
 end
-
-function F_I(system)
-    res =
-        quadgk(
-            x -> real(F_I_Integrand(x + 1im * η, system)),
-            -Inf,
-            0,
-            Inf,
-            maxevals = NumEvals,
-            rtol = ν,
-        )[1]::Float64
-    return res / (2 * pi)
-end
-
 
 # Colors for plotting
 my_red = RGB(215 / 255, 67 / 255, 84 / 255)
