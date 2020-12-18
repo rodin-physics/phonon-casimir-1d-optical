@@ -7,7 +7,6 @@ using QuadGK
 const ν = 1e-5;         # Relative tolerance for integration
 const η = 1e-5;         # Small number used for i0
 const α = 1e-9;         # Small number for absolute tolerance
-const max_omega = 10000; # large number used to truncate the finite temperature sum
 const NumEvals = 1e7;   # Maximum number of evaluations in quadgk
 
 # Impurity type
@@ -202,15 +201,15 @@ function F_I_T0(system)
         quadgk(
             ω -> 2 * real(F_I_Integrand_T0(ω, system)),
             0,
-            max_omega,
+            10000,
             maxevals = NumEvals,
             rtol = ν,
         )[1]::Float64
     return (res / (2 * π) / 2) # See the F_I formula for the division by 2
 end
 
-
 function F_I_T_Discrete(system)
+    max_omega = 15000;
     max_n = Integer(floor(max_omega / (2 * π * system.T)))
     res =
         map(
