@@ -155,7 +155,7 @@ for ii = 1:length(Defect_Δs)
         log.(ds),
         log.(QFT[ii, :] ./ QFT[ii, 1]),
         color = colors[ii],
-        label = latexstring("\$\\Delta = $(Defect_Δs[ii])\$"),
+        label = latexstring("\$\\Delta/k = $(Defect_Δs[ii])\$"),
     )
 end
 
@@ -203,7 +203,7 @@ for ii = 1:length(Defect_Ms)
         log.(ds),
         log.(QFT[ii, :] ./ QFT[ii, 1]),
         color = colors[ii],
-        label = latexstring("\$\\Delta = $(Defect_Δs[ii])\$"),
+        label = latexstring("\$\\Delta/k = $(Defect_Δs[ii])\$"),
     )
 end
 
