@@ -422,7 +422,7 @@ heatmap(
     MΔ,
     MΔ,
     ΔM_heatmap_data .* 1e2,
-    color = :RdBu_7,
+    color = reverse(cgrad(:RdBu_7)),
     xaxis = (L"M", font(14, "Serif")),
     yaxis = (L"\Delta", font(14, "Serif")),
     xtickfont = font(12, "Serif"),
