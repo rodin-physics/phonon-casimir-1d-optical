@@ -367,7 +367,7 @@ y_max = 4
 data = readdlm("data/monoatomic_chain/Cluster.dat")
 plot(
     xaxis = (L"d", font(14, "Serif")),
-    yaxis = (L"\left(E_I - E_I^0\right)\times 10^4", font(14, "Serif")),
+    yaxis = (L"\left(E_I - E_I^0\right)/\Omega\times 10^4", font(14, "Serif")),
     xtickfont = font(12, "Serif"),
     ytickfont = font(12, "Serif"),
     legendfont = font(12, "Serif"),
