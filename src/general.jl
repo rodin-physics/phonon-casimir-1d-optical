@@ -21,9 +21,3 @@ my_violet = RGB(169 / 255, 89 / 255, 201 / 255)
 my_orange = RGB(209 / 255, 135 / 255, 46 / 255)
 
 colors = [my_red, my_green, my_blue, my_violet, my_orange]
-polar_colorscheme = ColorScheme(
-    vcat(
-        range(my_blue, RGB(255 / 255, 255 / 255, 255 / 255), length = 50),
-        range(RGB(255 / 255, 255 / 255, 255 / 255), my_red, length = 50),
-    ),
-)

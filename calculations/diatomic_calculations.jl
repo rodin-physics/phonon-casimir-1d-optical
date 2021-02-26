@@ -33,8 +33,8 @@ res_light_heavy = @showprogress pmap(ds) do d
     Imp_1 = Impurity(1, 1, Imp_M, 0)
     Imp_2 = Impurity(1 + Integer(floor(d / 2)), 1 + isodd(d), Imp_M, 0)
     return [
-        exact_F_I(System([m1, m2], [Imp_1, Imp_2], 0, N, K)),
-        E_I(System([m1, m2], [Imp_1, Imp_2], 0, N, K)),
+        exact_F_I(System([m1, m2], [Imp_1, Imp_2], T, N, K)),
+        E_I(System([m1, m2], [Imp_1, Imp_2], T, N, K)),
     ]
 end
 

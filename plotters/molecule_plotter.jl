@@ -1,4 +1,4 @@
-include("calculations/molecule_calc_settings.jl")
+include("../calculations/molecule_calc_settings.jl")
 pgfplotsx()
 ## Zero-T plots
 

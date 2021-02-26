@@ -1,7 +1,7 @@
 using Distributed
 
 ## Set the number of Procs
-nProcs = 4;
+nProcs = 8;
 if nprocs() < nProcs
     addprocs(nProcs - nprocs())
 end

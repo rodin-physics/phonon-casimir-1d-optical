@@ -115,12 +115,12 @@ function exact_neg_TS_I(system)
     T = system.T
     N = system.N
     K = system.K
-    pristine_system = exact_zero_harmonic(System(Ms, [], T, N, K))
-    total_energy = exact_zero_harmonic(system) - pristine_system
+    pristine_system = exact_neg_TS(System(Ms, [], T, N, K))
+    total_energy = exact_neg_TS(system) - pristine_system
     impurity_energy =
         map(
             x ->
-                exact_zero_harmonic(System(Ms, [x], T, N, K)) - pristine_system,
+                exact_neg_TS(System(Ms, [x], T, N, K)) - pristine_system,
             Imps,
         ) |> sum
     return (total_energy - impurity_energy)
